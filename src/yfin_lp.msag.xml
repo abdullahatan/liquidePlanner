@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_MSAG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <T100A>
+    <ARBGB>YFIN_LP</ARBGB>
+    <MASTERLANG>T</MASTERLANG>
+    <STEXT>LP: Liquide Planner Message Class</STEXT>
+   </T100A>
+   <T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>000</MSGNR>
+     <TEXT>&amp; &amp; &amp; &amp;</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>001</MSGNR>
+     <TEXT>Geçersiz Timeunit değeri! D:Günlük, W:Haftalık, M:Aylık, Y:Yıllık</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>002</MSGNR>
+     <TEXT>Geçersiz tarih girişi!</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>003</MSGNR>
+     <TEXT>Dosya okuma hatası!</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>004</MSGNR>
+     <TEXT>Dosyada veri içermiyor!</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>005</MSGNR>
+     <TEXT>Tarih( &amp; ) formatı geçersiz! Lütfen kontrol ediniz.</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>006</MSGNR>
+     <TEXT>Tutar( &amp; ) formatı geçersiz! Lütfen kontrol ediniz.</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>007</MSGNR>
+     <TEXT>Likidite kalemi &amp; geçersiz! Lütfen kontrol ediniz.</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>008</MSGNR>
+     <TEXT>ŞK. &amp; PB &amp; Likidite kalemi &amp; için bakım eksik! İşlem kodu: YLP01</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>009</MSGNR>
+     <TEXT>Aktarım için lütfen uygun satır seçimi yapınız!</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>010</MSGNR>
+     <TEXT>&amp; alanı boş geçilemez!</TEXT>
+    </T100>
+   </T100>
+  </asx:values>
+ </asx:abap>
+</abapGit>
