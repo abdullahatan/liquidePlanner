@@ -1,2 +1,2 @@
-# liquidePlanner-
+# liquidePlanner
 Liquide Planner Package
