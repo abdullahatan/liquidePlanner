@@ -5,10 +5,17 @@ CLASS lcl_alv_handle DEFINITION.
 
   PUBLIC SECTION.
     METHODS:
-      hotspot_click FOR EVENT hotspot_click OF cl_gui_alv_grid
+      handle_hotspot_click FOR EVENT hotspot_click OF cl_gui_alv_grid
         IMPORTING
             e_column_id
             es_row_no,
+      handle_user_command FOR EVENT user_command OF cl_gui_alv_grid
+        IMPORTING
+            e_ucomm,
+      handle_toolbar_set FOR EVENT toolbar OF cl_gui_alv_grid
+        IMPORTING
+            e_object
+            e_interactive,
       call_transaction
         IMPORTING
           im_parameter TYPE tt_params
@@ -16,7 +23,7 @@ CLASS lcl_alv_handle DEFINITION.
 
 ENDCLASS.
 CLASS lcl_alv_handle IMPLEMENTATION.
-  METHOD hotspot_click.
+  METHOD handle_hotspot_click.
 
     CASE e_column_id.
       WHEN 'BELNR'.
@@ -32,7 +39,34 @@ CLASS lcl_alv_handle IMPLEMENTATION.
       WHEN OTHERS.
     ENDCASE.
 
-  ENDMETHOD.                    "hotspot_click
+  ENDMETHOD.                    "handle_hotspot_click
+  METHOD handle_user_command.
+
+    CASE e_ucomm.
+      WHEN '&RECALL'.
+        DATA: _answer TYPE char1.
+        PERFORM popup_confirm USING TEXT-t01 TEXT-t02 CHANGING _answer.
+        IF _answer EQ '1'.
+          _fm01dat-ev_action = e_ucomm.
+          SET SCREEN 0.
+          LEAVE SCREEN.
+        ENDIF.
+    ENDCASE.
+
+  ENDMETHOD.                    "handle_user_command
+  METHOD handle_toolbar_set.
+
+    CASE _pressed_tab.
+      WHEN '9200'.
+        IF _fm01dat-iv_tunit EQ 'D' AND _fm01dat-t_alvdat_tab2[] IS NOT INITIAL.
+          APPEND LINES OF VALUE ttb_button( ( function = '&RECALL'
+                                              icon = icon_status_reverse
+                                              text = 'Geri Çek'
+                                              quickinfo = 'Geri Çek' ) ) TO e_object->mt_toolbar.
+        ENDIF.
+    ENDCASE.
+
+  ENDMETHOD.                    "handle_toolbar_set
   METHOD call_transaction.
 
     LOOP AT im_parameter INTO DATA(wa_param).

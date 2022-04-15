@@ -213,7 +213,7 @@ CLASS lcl_model IMPLEMENTATION .
           formating_error = 1
           OTHERS          = 2 ).
       IF sy-subrc <> 0.
-        APPEND VALUE #( id = sy-msgid type = sy-msgty number = sy-msgno message_v1 = sy-msgv1 ) TO t_msgdat.  CLEAR: _exceldat->wrbtr.
+        APPEND VALUE #( id = sy-msgid type = sy-msgty number = sy-msgno message_v1 = sy-msgv1 ) TO t_msgdat.  CLEAR: _exceldat->budat.
       ENDIF.
 
       _conv_price_to_sap(
@@ -285,10 +285,10 @@ CLASS lcl_model IMPLEMENTATION .
             error = l_error
             idate = cv_datum.
         IF l_error <> space.
-          MESSAGE e006(yfin_lp) WITH cv_datum RAISING formating_error.
+          MESSAGE e005(yfin_lp) WITH cv_datum RAISING formating_error.
         ENDIF.
       CATCH cx_root INTO DATA(lo_root).
-        MESSAGE e006(yfin_lp) WITH cv_datum RAISING formating_error.
+        MESSAGE e005(yfin_lp) WITH cv_datum RAISING formating_error.
     ENDTRY.
 
   ENDMETHOD.                    "_conv_datum_to_sap

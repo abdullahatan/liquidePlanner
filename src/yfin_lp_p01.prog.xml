@@ -1772,7 +1772,7 @@
     <item>
      <ID>I</ID>
      <KEY>S01</KEY>
-     <ENTRY>Genel Seçim Kriterleri...</ENTRY>
+     <ENTRY>Rapor Seçim Kriterleri...</ENTRY>
      <LENGTH>50</LENGTH>
     </item>
     <item>
@@ -1784,7 +1784,7 @@
      <ID>S</ID>
      <KEY>P_BUKRS</KEY>
      <ENTRY>.</ENTRY>
-     <LENGTH>9</LENGTH>
+     <LENGTH>19</LENGTH>
      <SPLIT>D</SPLIT>
     </item>
     <item>

@@ -74,6 +74,12 @@
      <MSGNR>010</MSGNR>
      <TEXT>&amp; alanı boş geçilemez!</TEXT>
     </T100>
+    <T100>
+     <SPRSL>T</SPRSL>
+     <ARBGB>YFIN_LP</ARBGB>
+     <MSGNR>011</MSGNR>
+     <TEXT>Manuel kayıtların geri çekilmesi sırasında hatalar oluştu!</TEXT>
+    </T100>
    </T100>
   </asx:values>
  </asx:abap>

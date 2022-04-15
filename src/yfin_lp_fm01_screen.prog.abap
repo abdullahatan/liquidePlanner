@@ -36,6 +36,7 @@ ENDMODULE.
 MODULE main_tab_active_tab_set OUTPUT.
 
   main_tab-activetab = i_main_tab-pressed_tab.
+  _pressed_tab = i_main_tab-subscreen.
   CASE i_main_tab-pressed_tab.
     WHEN c_main_tab-tab1.
       i_main_tab-subscreen = '9100'.
@@ -47,7 +48,9 @@ MODULE main_tab_active_tab_set OUTPUT.
             i_parent = custom_container1.
 
         lo_handle = NEW lcl_alv_handle( ).
-        SET HANDLER lo_handle->hotspot_click FOR o_alvgrid1.
+        SET HANDLER lo_handle->handle_hotspot_click FOR o_alvgrid1.
+        SET HANDLER lo_handle->handle_user_command  FOR o_alvgrid1.
+        SET HANDLER lo_handle->handle_toolbar_set   FOR o_alvgrid1.
 
         CLEAR: gv_variant.
         gv_variant-report = sy-repid.
@@ -82,7 +85,9 @@ MODULE main_tab_active_tab_set OUTPUT.
             i_parent = custom_container2.
 
         lo_handle = NEW lcl_alv_handle( ).
-        SET HANDLER lo_handle->hotspot_click FOR o_alvgrid2.
+        SET HANDLER lo_handle->handle_hotspot_click FOR o_alvgrid2.
+        SET HANDLER lo_handle->handle_user_command  FOR o_alvgrid2.
+        SET HANDLER lo_handle->handle_toolbar_set   FOR o_alvgrid2.
 
         CLEAR: gv_variant.
         gv_variant-report = sy-repid.

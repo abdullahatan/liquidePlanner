@@ -13,6 +13,11 @@
      <SHORT_TEXT>LP: Detail ALV Output</SHORT_TEXT>
      <IMPORT>
       <RSIMP>
+       <PARAMETER>IV_TUNIT</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>CHAR1</TYP>
+      </RSIMP>
+      <RSIMP>
        <PARAMETER>IV_STRNAME_TAB1</PARAMETER>
        <DEFAULT>&apos;YFIN_LP_S01&apos;</DEFAULT>
        <REFERENCE>X</REFERENCE>
@@ -25,6 +30,12 @@
        <TYP>TABNAME</TYP>
       </RSIMP>
      </IMPORT>
+     <EXPORT>
+      <RSEXP>
+       <PARAMETER>EV_ACTION</PARAMETER>
+       <TYP>SYST_UCOMM</TYP>
+      </RSEXP>
+     </EXPORT>
      <TABLES>
       <RSTBL>
        <PARAMETER>T_ALVDAT_TAB1</PARAMETER>
@@ -37,6 +48,11 @@
      </TABLES>
      <DOCUMENTATION>
       <RSFDO>
+       <PARAMETER>IV_TUNIT</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>D-Day, W-Weekend, M-Month, Y-Year</STEXT>
+      </RSFDO>
+      <RSFDO>
        <PARAMETER>IV_STRNAME_TAB1</PARAMETER>
        <KIND>P</KIND>
        <STEXT>Tablo adı</STEXT>
@@ -45,6 +61,11 @@
        <PARAMETER>IV_STRNAME_TAB2</PARAMETER>
        <KIND>P</KIND>
        <STEXT>Tablo adı</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>EV_ACTION</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>ABAP system field: Function code that raised PAI</STEXT>
       </RSFDO>
       <RSFDO>
        <PARAMETER>T_ALVDAT_TAB1</PARAMETER>

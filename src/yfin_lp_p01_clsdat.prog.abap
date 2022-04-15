@@ -113,6 +113,19 @@ ENDCLASS.                    "lcl_mvc_view DEFINITION
 *&---------------------------------------------------------------------*
 CLASS lcl_mvc_controller DEFINITION.
   PUBLIC SECTION.
+
+    TYPES: ty_lqday_rng TYPE RANGE OF datum.
+
+    TYPES: BEGIN OF ty_keydat,
+             bukrs TYPE bukrs,
+             pkind TYPE yfin_lp_e001,
+             waers TYPE waers,
+             lqpos TYPE flqpos,
+             lqday TYPE ty_lqday_rng,
+             ebene TYPE fdlev,
+             ltype TYPE char1,
+           END OF ty_keydat.
+
     CONSTANTS:
       mc_model TYPE seoclsname VALUE 'LCL_MVC_MODEL',
       mc_view  TYPE seoclsname VALUE 'LCL_MVC_VIEW'.
@@ -139,6 +152,15 @@ CLASS lcl_mvc_controller DEFINITION.
         IMPORTING
           iv_actualdat TYPE yfin_lp_tt01
           iv_manueldat TYPE yfin_lp_tt02
+        EXPORTING
+          ev_action    TYPE syst_ucomm
+        EXCEPTIONS
+          contains_error,
+      reject_manueldat
+        IMPORTING
+          iv_keydat    TYPE ty_keydat
+          iv_column_id TYPE lvc_s_col
+          iv_row_no    TYPE lvc_s_roid
         EXCEPTIONS
           contains_error,
       save_logdat
@@ -344,6 +366,7 @@ CLASS lcl_mvc_model IMPLEMENTATION.
         ENDIF.
         APPEND INITIAL LINE TO t_plandat REFERENCE INTO DATA(_plandat).
         _plandat->* = CORRESPONDING #( _bsegdat->* ).
+        _plandat->lqpos = VALUE #( t_linedat[ ebene = _plandat->ebene ]-lqpos OPTIONAL ).
         _plandat->ltype = 'P'.
         READ TABLE t_bkpfdat REFERENCE INTO DATA(_bkpfdat) WITH TABLE KEY bukrs = _bsegdat->bukrs belnr = _bsegdat->belnr gjahr = _bsegdat->gjahr.
         IF sy-subrc IS INITIAL.
@@ -364,7 +387,7 @@ CLASS lcl_mvc_model IMPLEMENTATION.
       ENDLOOP.
     ENDIF.
 
-    SELECT DISTINCT 'P' AS ltype, a~zbukr AS bukrs, a~belnr, a~gjahr, a~buzei, a~gsber, b~ebene, a~lqday, a~twaer, a~wrbtr, a~pkoart, a~partner
+    SELECT DISTINCT 'P' AS ltype, a~zbukr AS bukrs, a~belnr, a~gjahr, a~buzei, a~gsber, b~lqpos, b~ebene, a~lqday, a~twaer, a~wrbtr, a~pkoart, a~partner
       FROM flqitemfi_fc AS a
         INNER JOIN yfin_lp_t02 AS b ON b~bukrs = a~bukrs AND b~lqpos = a~lqpos AND b~waers = a~twaer
           INTO TABLE @DATA(t_flqdat_fc)
@@ -415,7 +438,7 @@ CLASS lcl_mvc_model IMPLEMENTATION.
       ENDCASE.
     ENDLOOP.
 
-    SELECT DISTINCT 'P' AS ltype, a~bukrs, a~idenr, a~gsber, a~ebene, a~datum AS lqday, a~dispw AS twaer, a~wrshb AS wrbtr, a~zuonr, a~sgtxt
+    SELECT DISTINCT 'P' AS ltype, a~bukrs, a~idenr, a~gsber, a~ebene, b~lqpos, a~datum AS lqday, a~dispw AS twaer, a~wrshb AS wrbtr, a~zuonr, a~sgtxt
       FROM fdes AS a
         INNER JOIN yfin_lp_t02 AS b ON b~bukrs = a~bukrs AND b~ebene = a~ebene AND b~waers = a~dispw
           INTO TABLE @DATA(t_fdesdat)
@@ -431,7 +454,7 @@ CLASS lcl_mvc_model IMPLEMENTATION.
 *--------------------------------------------------------------------*
 *-&Fiili Verilerin Çekilmesi->
 *--------------------------------------------------------------------*
-    SELECT DISTINCT 'A' AS ltype, a~zbukr AS bukrs, a~belnr, a~gjahr, a~buzei, a~gsber, a~lqpos, a~lqday, a~twaer, a~wrbtr, a~pkoart, a~partner
+    SELECT DISTINCT 'A' AS ltype, a~zbukr AS bukrs, a~belnr, a~gjahr, a~buzei, a~gsber, a~lqpos, b~ebene, a~lqday, a~twaer, a~wrbtr, a~pkoart, a~partner
       FROM flqitemfi AS a
         INNER JOIN yfin_lp_t02 AS b ON b~bukrs = a~bukrs AND b~lqpos = a~lqpos AND b~waers = a~twaer
           INTO TABLE @DATA(t_flqdat_fi)
@@ -455,7 +478,7 @@ CLASS lcl_mvc_model IMPLEMENTATION.
 
       SELECT DISTINCT saknr, txt50
         FROM skat
-          INTO TABLE @t_actualdat
+          INTO TABLE @t_skatdat
             FOR ALL ENTRIES IN @t_flqdat_fi
               WHERE saknr = @t_flqdat_fi-partner
                 AND spras = @sy-langu.
@@ -553,12 +576,12 @@ CLASS lcl_mvc_model IMPLEMENTATION.
 *--------------------------------------------------------------------*
 *-& Actual Dat->
 *--------------------------------------------------------------------*
-        FREE: _lqday_rng.
-        LOOP AT t_logdat REFERENCE INTO DATA(_logdat) WHERE bukrs = _linedat->bukrs AND pkind = _linedat->pkind AND twaer = _linedat->waers AND lqpos = _linedat->lqpos AND ltype = 'A'.
-          APPEND VALUE #( sign = 'I' option = 'EQ' low = _logdat->lqday ) TO _lqday_rng.
-        ENDLOOP.
-
         LOOP AT mt_keydat REFERENCE INTO DATA(_keydat).
+
+          FREE: _lqday_rng.
+          LOOP AT t_logdat REFERENCE INTO DATA(_logdat) WHERE bukrs = _linedat->bukrs AND pkind = _linedat->pkind AND twaer = _linedat->waers AND lqpos = _linedat->lqpos AND ltype = 'A'.
+            APPEND VALUE #( sign = 'I' option = 'EQ' low = _logdat->lqday ) TO _lqday_rng.
+          ENDLOOP.
 
           ASSIGN COMPONENT |F_{ _keydat->value }| OF STRUCTURE <fs_linedat> TO <fs_value>.
           IF sy-subrc IS INITIAL.
@@ -1033,12 +1056,96 @@ CLASS lcl_mvc_controller IMPLEMENTATION.
   METHOD display_linedat.
     CALL FUNCTION 'YFIN_LP_FM01'
       EXPORTING
+        iv_tunit        = p_tunit
         iv_strname_tab1 = 'YFIN_LP_S01'
         iv_strname_tab2 = 'YFIN_LP_S02'
+      IMPORTING
+        ev_action       = ev_action
       TABLES
         t_alvdat_tab1   = iv_actualdat
         t_alvdat_tab2   = iv_manueldat.
   ENDMETHOD.                    "display_linedat
+  METHOD reject_manueldat.
+
+    TYPES: BEGIN OF ty_keycolmn,
+             bukrs  TYPE yfin_lp_t01-bukrs,
+             pkind  TYPE yfin_lp_t01-pkind,
+             waers  TYPE yfin_lp_t01-waers,
+             expand TYPE text40,
+             lqpos  TYPE yfin_lp_t02-lqpos,
+             ebene  TYPE yfin_lp_t02-ebene,
+           END OF ty_keycolmn.
+
+    DATA: _keycolmn TYPE ty_keycolmn,
+          _total    TYPE wrbtr.
+
+    FIELD-SYMBOLS: <ft_alvdat>  TYPE STANDARD TABLE,
+                   <ft_linedat> TYPE STANDARD TABLE.
+
+    READ TABLE mo_model->mt_appdat REFERENCE INTO DATA(_appdat) WITH KEY bukrs = iv_keydat-bukrs waers = iv_keydat-waers pkind = iv_keydat-pkind.
+    IF sy-subrc IS INITIAL.
+
+      GET TIME.
+      UPDATE yfin_lp_t03 SET xdele = abap_true erdat = sy-datum erzet = sy-uzeit ernam = sy-uname
+        WHERE bukrs = iv_keydat-bukrs AND pkind = iv_keydat-pkind AND twaer = iv_keydat-waers AND lqpos = iv_keydat-lqpos AND lqday = iv_column_id-fieldname+2(27) AND ltype = iv_keydat-ltype.
+      IF sy-subrc IS INITIAL.
+        DELETE _appdat->root_dat-_logdat WHERE bukrs = iv_keydat-bukrs AND
+                                               pkind = iv_keydat-pkind AND
+                                               twaer = iv_keydat-waers AND
+                                               lqpos = iv_keydat-lqpos AND
+                                               lqday = iv_column_id-fieldname+2(27) AND
+                                               ltype = iv_keydat-ltype.
+
+        ASSIGN mo_model->mt_alvdat->* TO <ft_alvdat>.
+        ASSIGN <ft_alvdat>[ iv_row_no-row_id ] TO FIELD-SYMBOL(<fs_alvdat>).
+
+        ASSIGN COMPONENT iv_column_id-fieldname OF STRUCTURE <fs_alvdat> TO FIELD-SYMBOL(<amount>).
+        <amount> = REDUCE wrbtr( INIT val TYPE wrbtr FOR wa_docdat IN _appdat->root_dat-_docdat
+                    WHERE ( bukrs = iv_keydat-bukrs AND twaer = iv_keydat-waers AND lqpos = iv_keydat-lqpos AND ltype = iv_keydat-ltype AND lqday IN iv_keydat-lqday[] ) NEXT val = val + wa_docdat-wrbtr ).
+
+        UNASSIGN: <ft_linedat>.
+        ASSIGN _appdat->line_tab->* TO <ft_linedat>.
+        LOOP AT <ft_linedat> ASSIGNING FIELD-SYMBOL(<fs_linedat>).
+          ASSIGN COMPONENT iv_column_id-fieldname OF STRUCTURE <fs_linedat> TO FIELD-SYMBOL(<fs_lineval>).
+          IF <fs_lineval> IS ASSIGNED.
+            CLEAR: _keycolmn.
+            _keycolmn = CORRESPONDING #( <fs_linedat> ).
+            IF _keycolmn-bukrs EQ iv_keydat-bukrs AND _keycolmn-pkind = iv_keydat-pkind AND _keycolmn-waers = iv_keydat-waers AND _keycolmn-lqpos = iv_keydat-lqpos.
+              <fs_lineval> = <amount>.
+            ENDIF.
+            _total = _total + <fs_lineval>.
+          ENDIF.
+        ENDLOOP.
+        FIELD-SYMBOLS: <ft_basedat> TYPE STANDARD TABLE.
+
+        LOOP AT <ft_alvdat> ASSIGNING <fs_alvdat>.
+          CLEAR: _keycolmn.
+          _keycolmn = CORRESPONDING #( <fs_alvdat> ).
+          CHECK _keycolmn-bukrs = iv_keydat-bukrs AND _keycolmn-pkind = iv_keydat-pkind AND _keycolmn-waers = iv_keydat-waers AND _keycolmn-expand <> space.
+          UNASSIGN: <amount>.
+          ASSIGN COMPONENT iv_column_id-fieldname OF STRUCTURE <fs_alvdat> TO <amount>.
+          IF <amount> IS ASSIGNED.
+            <amount> = _total. EXIT.
+          ENDIF.
+        ENDLOOP.
+
+        UNASSIGN: <ft_basedat>.
+        ASSIGN _appdat->base_tab->* TO <ft_basedat>.
+        READ TABLE <ft_basedat> ASSIGNING FIELD-SYMBOL(<fs_basedat>) INDEX 1.
+        IF sy-subrc IS INITIAL.
+          ASSIGN COMPONENT iv_column_id-fieldname OF STRUCTURE <fs_basedat> TO FIELD-SYMBOL(<fs_baseval>).
+          IF <fs_baseval> IS ASSIGNED.
+            <fs_baseval> = _total.
+          ENDIF.
+        ENDIF.
+      ELSE.
+        MESSAGE e011(yfin_lp) RAISING contains_error.
+      ENDIF.
+    ELSE.
+      MESSAGE e011(yfin_lp) RAISING contains_error.
+    ENDIF.
+
+  ENDMETHOD.                    "reject_manueldat
   METHOD save_logdat.
 
     LOOP AT mo_model->mt_appdat INTO mo_model->mv_appdat.
@@ -1217,15 +1324,26 @@ CLASS lcl_mvc_controller IMPLEMENTATION.
 
     FIELD-SYMBOLS: <ft_alvdat> TYPE STANDARD TABLE.
 
-    TYPES: BEGIN OF ty_deldat,
+    TYPES: BEGIN OF ty_delcolmn,
              bukrs  TYPE yfin_lp_t01-bukrs,
              pkind  TYPE yfin_lp_t01-pkind,
              waers  TYPE yfin_lp_t01-waers,
              expand TYPE text40,
-           END OF ty_deldat.
-    DATA: _deldat   TYPE ty_deldat,
-          t_celldat TYPE lvc_t_styl.
+           END OF ty_delcolmn.
 
+    TYPES: BEGIN OF ty_keycolmn,
+             bukrs  TYPE yfin_lp_t01-bukrs,
+             pkind  TYPE yfin_lp_t01-pkind,
+             waers  TYPE yfin_lp_t01-waers,
+             expand TYPE text40,
+             lqpos  TYPE yfin_lp_t02-lqpos,
+             ebene  TYPE yfin_lp_t02-ebene,
+           END OF ty_keycolmn.
+
+    DATA: _delcolmn TYPE ty_delcolmn,
+          _keycolmn TYPE ty_keycolmn,
+          _total    TYPE wrbtr,
+          t_celldat TYPE lvc_t_styl.
 
     CASE e_column_id.
       WHEN 'EXPAND'.
@@ -1263,8 +1381,8 @@ CLASS lcl_mvc_controller IMPLEMENTATION.
           <expand> = get_icon( iv_type = 'E' ).
           LOOP AT <ft_alvdat> ASSIGNING FIELD-SYMBOL(<fs_deldat>).
             DATA(_index) = sy-tabix.
-            _deldat = CORRESPONDING #( <fs_deldat> ).
-            IF _deldat-bukrs EQ <bukrs> AND _deldat-pkind EQ <pkind> AND _deldat-waers EQ <waers> AND _deldat-expand IS INITIAL.
+            _delcolmn = CORRESPONDING #( <fs_deldat> ).
+            IF _delcolmn-bukrs EQ <bukrs> AND _delcolmn-pkind EQ <pkind> AND _delcolmn-waers EQ <waers> AND _delcolmn-expand IS INITIAL.
               DELETE <ft_alvdat> INDEX _index.
             ENDIF.
           ENDLOOP.
@@ -1278,24 +1396,43 @@ CLASS lcl_mvc_controller IMPLEMENTATION.
             ASSIGN COMPONENT 'WAERS' OF STRUCTURE <fs_alvdat> TO <waers>.
             ASSIGN COMPONENT 'PKIND' OF STRUCTURE <fs_alvdat> TO <pkind>.
             ASSIGN COMPONENT 'LQPOS' OF STRUCTURE <fs_alvdat> TO FIELD-SYMBOL(<lqpos>).
+            ASSIGN COMPONENT 'EBENE' OF STRUCTURE <fs_alvdat> TO FIELD-SYMBOL(<ebene>).
             READ TABLE mo_model->mt_keydat REFERENCE INTO _keydat WITH KEY value = e_column_id-fieldname+2(27).
             IF sy-subrc IS INITIAL.
 
-              READ TABLE mo_model->mt_appdat INTO mo_model->mv_appdat WITH KEY bukrs = <bukrs> waers = <waers> pkind = <pkind>.
+              READ TABLE mo_model->mt_appdat REFERENCE INTO DATA(_appdat) WITH KEY bukrs = <bukrs> waers = <waers> pkind = <pkind>.
               IF sy-subrc IS INITIAL.
                 FREE: mo_model->mt_actualdat, mo_model->mt_manueldat.
-                APPEND LINES OF VALUE yfin_lp_tt01( FOR ls_docdat IN mo_model->mv_appdat-root_dat-_docdat WHERE ( ltype = 'A' AND lqday IN _keydat->range AND lqpos = <lqpos> ) ( CORRESPONDING #( ls_docdat ) ) ) TO mo_model->mt_actualdat.
-                APPEND LINES OF VALUE yfin_lp_tt02( FOR ls_logdat IN mo_model->mv_appdat-root_dat-_logdat WHERE ( ltype = 'A' AND lqday IN _keydat->range AND lqpos = <lqpos> ) ( CORRESPONDING #( ls_logdat ) ) ) TO mo_model->mt_manueldat.
+                APPEND LINES OF VALUE yfin_lp_tt01( FOR ls_docdat IN _appdat->root_dat-_docdat WHERE ( ltype = 'A' AND lqday IN _keydat->range AND lqpos = <lqpos> ) ( CORRESPONDING #( ls_docdat ) ) ) TO mo_model->mt_actualdat.
+                APPEND LINES OF VALUE yfin_lp_tt02( FOR ls_logdat IN _appdat->root_dat-_logdat WHERE ( ltype = 'A' AND lqday IN _keydat->range AND lqpos = <lqpos> ) ( CORRESPONDING #( ls_logdat ) ) ) TO mo_model->mt_manueldat.
                 me->display_linedat(
                   EXPORTING
                     iv_actualdat = mo_model->mt_actualdat
                     iv_manueldat = mo_model->mt_manueldat
+                  IMPORTING
+                    ev_action = DATA(_action)
                   EXCEPTIONS
                     contains_error = 1
                     OTHERS         = 2 ).
                 IF sy-subrc <> 0.
                   MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
                     WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+                ELSE.
+                  CASE _action.
+                    WHEN '&RECALL'.
+                      reject_manueldat(
+                        EXPORTING
+                          iv_keydat    = VALUE #( bukrs = <bukrs> pkind = <pkind> waers = <waers> lqpos = <lqpos> ebene = <ebene> lqday = _keydat->range ltype = 'A' )
+                          iv_column_id = e_column_id
+                          iv_row_no    = es_row_no
+                       EXCEPTIONS
+                         contains_error = 1
+                         OTHERS         = 2 ).
+                      IF sy-subrc <> 0.
+                        MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+                          WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+                      ENDIF.
+                  ENDCASE.
                 ENDIF.
               ENDIF.
             ENDIF.
@@ -1305,25 +1442,44 @@ CLASS lcl_mvc_controller IMPLEMENTATION.
             ASSIGN COMPONENT 'BUKRS' OF STRUCTURE <fs_alvdat> TO <bukrs>.
             ASSIGN COMPONENT 'WAERS' OF STRUCTURE <fs_alvdat> TO <waers>.
             ASSIGN COMPONENT 'PKIND' OF STRUCTURE <fs_alvdat> TO <pkind>.
-            ASSIGN COMPONENT 'EBENE' OF STRUCTURE <fs_alvdat> TO FIELD-SYMBOL(<ebene>).
+            ASSIGN COMPONENT 'LQPOS' OF STRUCTURE <fs_alvdat> TO <lqpos>.
+            ASSIGN COMPONENT 'EBENE' OF STRUCTURE <fs_alvdat> TO <ebene>.
             READ TABLE mo_model->mt_keydat REFERENCE INTO _keydat WITH KEY value = e_column_id-fieldname+2(27).
             IF sy-subrc IS INITIAL.
 
-              READ TABLE mo_model->mt_appdat INTO mo_model->mv_appdat WITH KEY bukrs = <bukrs> waers = <waers> pkind = <pkind>.
+              READ TABLE mo_model->mt_appdat REFERENCE INTO _appdat WITH KEY bukrs = <bukrs> waers = <waers> pkind = <pkind>.
               IF sy-subrc IS INITIAL.
                 FREE: mo_model->mt_actualdat, mo_model->mt_manueldat.
-                APPEND LINES OF VALUE yfin_lp_tt01( FOR ls_docdat IN mo_model->mv_appdat-root_dat-_docdat WHERE ( ltype = 'P' AND lqday IN _keydat->range AND ebene = <ebene> ) ( CORRESPONDING #( ls_docdat ) ) ) TO mo_model->mt_actualdat.
-                APPEND LINES OF VALUE yfin_lp_tt02( FOR ls_logdat IN mo_model->mv_appdat-root_dat-_logdat WHERE ( ltype = 'P' AND lqday IN _keydat->range AND ebene = <ebene> ) ( CORRESPONDING #( ls_logdat ) ) ) TO mo_model->mt_manueldat.
+                APPEND LINES OF VALUE yfin_lp_tt01( FOR ls_docdat IN _appdat->root_dat-_docdat WHERE ( ltype = 'P' AND lqday IN _keydat->range AND ebene = <ebene> ) ( CORRESPONDING #( ls_docdat ) ) ) TO mo_model->mt_actualdat.
+                APPEND LINES OF VALUE yfin_lp_tt02( FOR ls_logdat IN _appdat->root_dat-_logdat WHERE ( ltype = 'P' AND lqday IN _keydat->range AND ebene = <ebene> ) ( CORRESPONDING #( ls_logdat ) ) ) TO mo_model->mt_manueldat.
                 me->display_linedat(
                   EXPORTING
                     iv_actualdat = mo_model->mt_actualdat
                     iv_manueldat = mo_model->mt_manueldat
+                  IMPORTING
+                    ev_action = _action
                   EXCEPTIONS
                     contains_error = 1
                     OTHERS         = 2 ).
                 IF sy-subrc <> 0.
                   MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
                     WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+                ELSE.
+                  CASE _action.
+                    WHEN '&RECALL'.
+                      reject_manueldat(
+                        EXPORTING
+                          iv_keydat    = VALUE #( bukrs = <bukrs> pkind = <pkind> waers = <waers> lqpos = <lqpos> ebene = <ebene> lqday = _keydat->range ltype = 'P' )
+                          iv_column_id = e_column_id
+                          iv_row_no    = es_row_no
+                       EXCEPTIONS
+                         contains_error = 1
+                         OTHERS         = 2 ).
+                      IF sy-subrc <> 0.
+                        MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+                          WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+                      ENDIF.
+                  ENDCASE.
                 ENDIF.
               ENDIF.
             ENDIF.

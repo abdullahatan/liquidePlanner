@@ -79,3 +79,24 @@ FORM f_set_layout USING VALUE(ptitle)
   gv_variant-report = sy-repid.
 
 ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  popup_confirm
+*&---------------------------------------------------------------------*
+FORM popup_confirm USING pv_titlebar pv_question CHANGING cv_answer TYPE char1.
+
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = pv_titlebar
+      text_question         = pv_question
+      text_button_1         = TEXT-d01
+      text_button_2         = TEXT-d02
+      popup_type            = 'ICON_MESSAGE_CRITICAL'
+      default_button        = '2'
+      display_cancel_button = abap_true
+    IMPORTING
+      answer                = cv_answer
+    EXCEPTIONS
+      text_not_found        = 1
+      OTHERS                = 2.
+
+ENDFORM.
